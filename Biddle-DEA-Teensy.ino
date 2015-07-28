@@ -1,6 +1,11 @@
 //This code sends takes serial PD data from the FPGA, analog voltages from the biddle, and sends them via serial over usb to labview.
 //With a PGA gain of 4, max voltage is 30kV
 
+//TODO
+//Test
+//Uncomment Serialcomm
+//Uncomment AC lines
+
 #include <ADC.h>
 
 ADC *adc = new ADC(); // adc object
@@ -16,48 +21,48 @@ float i = 0;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-    Serial1.begin(115200);
-    pinMode(A10, INPUT); //Diff Channel 0 Positive
-    pinMode(A11, INPUT); //Diff Channel 0 Negative
-  
-    /********DC VOLTAGE (ADC CHANNEL 0) ***************/
-    adc->setReference(ADC_REF_1V2, ADC_0);
-    adc->setAveraging(32); // set number of averages
-    adc->setResolution(12); // set bits of resolution
-    adc->enablePGA(DCpga);
-    // it can be ADC_VERY_LOW_SPEED, ADC_LOW_SPEED, ADC_MED_SPEED, ADC_HIGH_SPEED_16BITS, ADC_HIGH_SPEED or ADC_VERY_HIGH_SPEED
-    // see the documentation for more information
-    // additionally the conversion speed can also be ADC_ADACK_2_4, ADC_ADACK_4_0, ADC_ADACK_5_2 and ADC_ADACK_6_2,
-    // where the numbers are the frequency of the ADC clock in MHz and are independent on the bus speed.
-    adc->setConversionSpeed(ADC_LOW_SPEED); // change the conversion speed
-    // it can be ADC_VERY_LOW_SPEED, ADC_LOW_SPEED, ADC_MED_SPEED, ADC_HIGH_SPEED or ADC_VERY_HIGH_SPEED
-    adc->setSamplingSpeed(ADC_LOW_SPEED); // change the sampling speed
-    adc->startContinuousDifferential(A10, A11, ADC_0);
-  
-    /********AC VOLTAGE (ADC CHANNEL 1) ***************/
-    adc->setReference(ADC_REF_1V2, ADC_1);
-    adc->setAveraging(32, ADC_1); // set number of averages
-    adc->setResolution(12, ADC_1); // set bits of resolution
-    adc->enablePGA(ACpga, ADC_1);
-    // it can be ADC_VERY_LOW_SPEED, ADC_LOW_SPEED, ADC_MED_SPEED, ADC_HIGH_SPEED_16BITS, ADC_HIGH_SPEED or ADC_VERY_HIGH_SPEED
-    // see the documentation for more information
-    // additionally the conversion speed can also be ADC_ADACK_2_4, ADC_ADACK_4_0, ADC_ADACK_5_2 and ADC_ADACK_6_2,
-    // where the numbers are the frequency of the ADC clock in MHz and are independent on the bus speed.
-    adc->setConversionSpeed(ADC_LOW_SPEED, ADC_1); // change the conversion speed
-    // it can be ADC_VERY_LOW_SPEED, ADC_LOW_SPEED, ADC_MED_SPEED, ADC_HIGH_SPEED or ADC_VERY_HIGH_SPEED
-    adc->setSamplingSpeed(ADC_LOW_SPEED, ADC_1); // change the sampling speed
-    // always call the compare functions after changing the resolution!
-    adc->enableCompare(1.2/1.2*adc->getMaxValue(ADC_1), 0, ADC_1); // measurement will be ready if value < 1.0V
-    adc->startContinuousDifferential(A12, A13, ADC_1);
+  Serial1.begin(115200);
+  pinMode(A10, INPUT); //Diff Channel 0 Positive
+  pinMode(A11, INPUT); //Diff Channel 0 Negative
+
+  /********DC VOLTAGE (ADC CHANNEL 0) ***************/
+  adc->setReference(ADC_REF_1V2, ADC_0);
+  adc->setAveraging(32); // set number of averages
+  adc->setResolution(12); // set bits of resolution
+  adc->enablePGA(DCpga);
+  // it can be ADC_VERY_LOW_SPEED, ADC_LOW_SPEED, ADC_MED_SPEED, ADC_HIGH_SPEED_16BITS, ADC_HIGH_SPEED or ADC_VERY_HIGH_SPEED
+  // see the documentation for more information
+  // additionally the conversion speed can also be ADC_ADACK_2_4, ADC_ADACK_4_0, ADC_ADACK_5_2 and ADC_ADACK_6_2,
+  // where the numbers are the frequency of the ADC clock in MHz and are independent on the bus speed.
+  adc->setConversionSpeed(ADC_LOW_SPEED); // change the conversion speed
+  // it can be ADC_VERY_LOW_SPEED, ADC_LOW_SPEED, ADC_MED_SPEED, ADC_HIGH_SPEED or ADC_VERY_HIGH_SPEED
+  adc->setSamplingSpeed(ADC_LOW_SPEED); // change the sampling speed
+  adc->startContinuousDifferential(A10, A11, ADC_0);
+
+  /********AC VOLTAGE (ADC CHANNEL 1) ***************/
+  adc->setReference(ADC_REF_1V2, ADC_1);
+  adc->setAveraging(32, ADC_1); // set number of averages
+  adc->setResolution(12, ADC_1); // set bits of resolution
+  adc->enablePGA(ACpga, ADC_1);
+  // it can be ADC_VERY_LOW_SPEED, ADC_LOW_SPEED, ADC_MED_SPEED, ADC_HIGH_SPEED_16BITS, ADC_HIGH_SPEED or ADC_VERY_HIGH_SPEED
+  // see the documentation for more information
+  // additionally the conversion speed can also be ADC_ADACK_2_4, ADC_ADACK_4_0, ADC_ADACK_5_2 and ADC_ADACK_6_2,
+  // where the numbers are the frequency of the ADC clock in MHz and are independent on the bus speed.
+  adc->setConversionSpeed(ADC_LOW_SPEED, ADC_1); // change the conversion speed
+  // it can be ADC_VERY_LOW_SPEED, ADC_LOW_SPEED, ADC_MED_SPEED, ADC_HIGH_SPEED or ADC_VERY_HIGH_SPEED
+  adc->setSamplingSpeed(ADC_LOW_SPEED, ADC_1); // change the sampling speed
+  // always call the compare functions after changing the resolution!
+  adc->enableCompare(1.2 / 1.2 * adc->getMaxValue(ADC_1), 0, ADC_1); // measurement will be ready if value < 1.0V
+  adc->startContinuousDifferential(A12, A13, ADC_1);
 
   delay(2000);
 
-    DCVoltage = (float)adc->analogReadContinuous(ADC_0)/(4096.0)*1.2/DCpga;
-    ACVoltage = (float)adc->analogReadContinuous(ADC_1)/(4096.0)*1.2/ACpga;
-    Serial.write('%');
-    printVoltage(DCVoltage);
-    Serial.write('~');
-    printVoltage(ACVoltage);
+  DCVoltage = (float)adc->analogReadContinuous(ADC_0) / (4096.0) * 1.2 / DCpga;
+  ACVoltage = (float)adc->analogReadContinuous(ADC_1) / (4096.0) * 1.2 / ACpga;
+  Serial.write('%');
+  printVoltage(DCVoltage);
+  Serial.write('~');
+  printVoltage(ACVoltage);
 }
 
 void loop() {
@@ -118,7 +123,7 @@ void voltageReadWrite() {
   ACVoltage = (float)adc->analogReadContinuous(ADC_1) / (4096.0) * 1.2 / ACpga;
   if (abs(prevDC - DCVoltage) > changeThres) {
     Serial.write('%');
-    printVoltage(DCVoltage/10);
+    printVoltage(DCVoltage / 10);
   }
   if (ACVoltage >= 0.25 && ACpga == 4) {
     ACpga = 2;
