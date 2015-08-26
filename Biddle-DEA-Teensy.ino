@@ -2,6 +2,9 @@
 
 #include <ADC.h>
 
+//TEST 921600 BAUD
+//IF IT FAILS, SEND ONLY VOLTAGE WITH THIS
+
 ADC *adc = new ADC(); // adc object
 int DCpga = 4;//can only be 1,2,4,8,16,32,64
 int ACpga = 4;//can only be 1,2,4,8,16,32,64
@@ -16,11 +19,13 @@ bool needReading = true;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  Serial1.begin(115200);
+  //Serial1.begin(921600);
+
   pinMode(A10, INPUT); //Diff Channel 0 Positive
   pinMode(A11, INPUT); //Diff Channel 0 Negative
   pinMode(A12, INPUT); //Diff Channel 1 Positive
   pinMode(A13, INPUT); //Diff Channel 1 Negative
+
   /********DC VOLTAGE (ADC CHANNEL 0) ***************/
   adc->setReference(ADC_REF_1V2, ADC_0);
   adc->setAveraging(32, ADC_0); // set number of averages
@@ -51,8 +56,18 @@ void setup() {
   //  adc->enableCompare(1.2 / 1.2 * adc->getMaxValue(ADC_1), 0, ADC_1); // measurement will be ready if value < 1.0V
   //  adc->startContinuousDifferential(A12, A13, ADC_1);
 
-  delay(1000);
+  //delay(1000);
+    while (Serial.available() > 0) {
+      Serial.read();
+    }
+    
+    while (Serial.available() == 0) {
+    }
 
+    if (Serial.read() != '@') {
+      while(1);
+    }
+    
     DCVoltage = (float)adc->analogReadDifferential(A10,A11,ADC_0) / (4096.0) * 1.2 / DCpga;
     ACVoltage = -(float)adc->analogReadDifferential(A12,A13,ADC_1) / (4096.0) * 1.2 / ACpga;//Wired Backwords
     Serial.write('%');
@@ -63,48 +78,19 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  serialComm();
-  delay(5);
+  if (Serial.available() > 0) {
+    Serial.read();
+    DCVoltage = (float)adc->analogReadDifferential(A10,A11,ADC_0) / (4096.0) * 1.2 / DCpga;
+    ACVoltage = -(float)adc->analogReadDifferential(A12,A13,ADC_1) / (4096.0) * 1.2 / ACpga;//Wired Backwords
+    Serial.write('%');
+    printVoltage(DCVoltage);
+    Serial.write('~');
+    printVoltage(ACVoltage);
+  
+  }
   voltageReadWrite();
   delay(5);
   //5 milliseconds is needed to seperate serial packets
-  //  delay(5);
-
-}
-
-
-
-void serialComm() {
-  needReading = true;
-
-  if (Serial1.available() > 0) {
-    while (needReading == true) {
-      data = Serial1.read();
-      if (reading == 1) {
-        if (data == 48 && prevData == 48) {
-          badData = 1;
-        }
-        else if (data == 49 && prevData == 48) {
-          badData = 1;
-        }
-        else {
-          badData = 0;
-          Serial.write("|");
-          Serial.write(prevData);
-          Serial.write(data);
-        }
-      }
-      reading++;
-      if (data == 9) {
-        if (badData == 0) {
-          Serial.write(data);
-        }
-        reading = 0;
-        needReading = false;
-      }
-      prevData = data;
-    }
-  }
 }
 
 void printVoltage(float voltage) {
